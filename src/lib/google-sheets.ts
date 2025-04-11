@@ -52,7 +52,7 @@ export async function initializeSheet() {
         },
       });
 
-      await addHeaders(spreadsheetId);
+      await addHeaders(spreadsheetId, SHEET_TAB);
     } else {
       console.log(`✅ Sheet "${SHEET_TAB}" already exists.`);
     }
@@ -79,36 +79,47 @@ async function createSheet(): Promise<string> {
   process.env.GOOGLE_SHEET_ID = spreadsheetId;
   SHEET_ID = spreadsheetId;
 
-  await addHeaders(spreadsheetId);
+  await addHeaders(spreadsheetId, SHEET_TAB);
   console.log('✅ New spreadsheet created with headers.');
 
   return spreadsheetId;
 }
 
-async function addHeaders(spreadsheetId: string) {
+async function addHeaders(spreadsheetId: string, sheetName: string) {
   const sheets = await getSheetsAPI();
   const headerValues = [
     [
-      'Employer',
-      'Position',
-      'Location',
-      'Status',
-      'Applied Date',
-      'Relevance',
-      'Job Description',
-      'Resume',
-      'Keywords',
-      'Notes',
-      'URL',
+      'Employer', 'Position', 'Location', 'Status', 'Applied Date',
+      'Relevance', 'Job Description', 'Resume', 'Keywords', 'Notes', 'URL',
+      'Updated Resume', 'Updated Resume Analysis', 'Latex Resume', 'Keyword Analysis'
     ],
   ];
 
-  await sheets.spreadsheets.values.update({
-    spreadsheetId,
-    range: `${SHEET_TAB}!A1:K1`,
-    valueInputOption: 'USER_ENTERED',
-    requestBody: { values: headerValues },
-  });
+  try {
+    // Check if headers already exist
+    const existingHeaders = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${sheetName}!1:1`, // Get the first row
+    });
+
+    const existingValues = existingHeaders.data.values?.[0] || [];
+    const headersToAdd = headerValues[0].filter(header => !existingValues.includes(header));
+
+    if (headersToAdd.length > 0) {
+      const nextColumn = String.fromCharCode(65 + existingValues.length); // Get the next column letter (A, B, C, ...)
+      const range = `${sheetName}!${nextColumn}1`;
+
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: range,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: [headersToAdd] },
+      });
+    }
+  } catch (error) {
+    console.error('Error adding headers:', error);
+    throw error;
+  }
 }
 
 export async function getJobPostings(): Promise<any[]> {
