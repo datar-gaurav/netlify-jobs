@@ -5,22 +5,18 @@ import {JobPosting} from '@/services/external-job-boards';
 
 let SHEET_ID: string | undefined = process.env.GOOGLE_SHEET_ID;
 
+
 export async function getSheetsAPI() {
-  try {
-    const authClient = new google.auth.JWT(
-      process.env.GOOGLE_CREDENTIALS_CLIENT_EMAIL,
-      undefined,
-      process.env.GOOGLE_CREDENTIALS_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      ['https://www.googleapis.com/auth/spreadsheets']
-    );
+  const jwtClient = new google.auth.JWT(
+    process.env.GOOGLE_CREDENTIALS_CLIENT_EMAIL,
+    undefined,
+    process.env.GOOGLE_CREDENTIALS_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    ['https://www.googleapis.com/auth/spreadsheets']
+  );
 
-    await authClient.authorize(); // force connection
+  await jwtClient.authorize();
 
-    return google.sheets({ version: 'v4', auth: authClient });
-  } catch (error) {
-    console.error('❌ Failed to initialize Sheets API:', error);
-    throw error;
-  }
+  return google.sheets({ version: 'v4', auth: jwtClient });
 }
 
 export async function initializeSheet() {
