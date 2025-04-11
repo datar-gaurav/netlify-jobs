@@ -35,10 +35,60 @@ import {
   ArrowDown,
   ArrowUp,
   Trash,
+  Search as SearchIcon,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { addJobToSheet, deleteJobFromSheet, getJobPostings, initializeSheet, updateJobInSheet } from '@/lib/google-sheets';
 import Markdown from 'react-markdown';
+
+// --- STYLE UPDATES BEGIN ---
+// Enhanced visual hierarchy
+CardTitle.defaultProps = { className: "text-2xl font-semibold" };
+CardDescription.defaultProps = { className: "text-muted-foreground text-sm" };
+TabsTrigger.defaultProps = {
+  className: "uppercase tracking-wide text-sm data-[state=active]:font-bold"
+};
+
+// Styling search input
+Input.defaultProps = {
+  className: "pl-8 shadow-sm"
+};
+
+// Styling table rows
+TableRow.defaultProps = {
+  className: "cursor-pointer hover:bg-muted/50 transition-colors"
+};
+
+// Styling card container
+Card.defaultProps = {
+  className: "shadow-md rounded-2xl border border-muted"
+};
+
+// Enhance badges
+Badge.defaultProps = {
+  className: "text-sm font-medium px-2 py-1 rounded-full"
+};
+
+// Animate buttons
+Button.defaultProps = {
+  className: "transition-transform hover:scale-105"
+};
+
+// Add Search icon support
+const SearchWithIcon = ({ value, onChange }: { value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
+  <div className="relative w-full">
+    <SearchIcon className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+    <Input
+      type="text"
+      placeholder="Search jobs..."
+      value={value}
+      onChange={onChange}
+      className="pl-8 w-full"
+    />
+  </div>
+);
+// --- STYLE UPDATES END ---
+
 
 interface JobApplication {
   employer: string;
