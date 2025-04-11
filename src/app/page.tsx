@@ -52,6 +52,7 @@ interface JobApplication {
   keywords: string[];
   notes: string;
   url: string;
+  finalResume: string;
 }
 
 const INITIAL_RESUME = `
@@ -64,6 +65,7 @@ export default function Home() {
   const [jobApplications, setJobApplications] = useState<JobApplication[]>([]);
   const [selectedJob, setSelectedJob] = useState<JobApplication | null>(null);
   const [resume, setResume] = useState<string>(INITIAL_RESUME);
+  const [finalResume, setFinalResume] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
   const [keywords, setKeywords] = useState<string[]>([]);
   const [relevanceScore, setRelevanceScore] = useState<number | null>(null);
@@ -107,6 +109,7 @@ export default function Home() {
           relevance: job.Relevance != null ? parseFloat(job.Relevance) : null,
           jobDescription: job['Job Description'],
           resume: job.Resume,
+finalResume: job['Final Resume'] || "", 
           keywords: job.Keywords ? job.Keywords.split(',').map((keyword: string) => keyword.trim()) : [],
           notes: job.Notes,
           url: job.URL,
@@ -179,6 +182,35 @@ export default function Home() {
                 });
             }
         }
+    };
+
+    const handleFinalResumeChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const newFinalResume = e.target.value;
+      setFinalResume(newFinalResume);
+    
+      if (selectedJob) {
+        const updatedJob = { ...selectedJob, finalResume: newFinalResume };
+        setSelectedJob(updatedJob);
+    
+        const rowIndex = jobApplications.findIndex(
+          job => job.position === selectedJob.position && job.employer === selectedJob.employer
+        ) + 2;
+    
+        updateJobInSheet(updatedJob, rowIndex).catch((error) => {
+          console.error("Error updating final resume:", error);
+          toast({
+            title: "Error",
+            description: "Failed to update Final Resume in Google Sheets.",
+            variant: "destructive",
+          });
+        });
+    
+        setJobApplications(jobApplications.map(job =>
+          job.employer === selectedJob.employer && job.position === selectedJob.position
+            ? { ...job, finalResume: newFinalResume }
+            : job
+        ));
+      }
     };
 
 
@@ -662,6 +694,7 @@ export default function Home() {
                 <TabsTrigger value="keyword-analysis">Keyword Analysis</TabsTrigger>
                 <TabsTrigger value="updated-resume">Updated Resume</TabsTrigger>
                 <TabsTrigger value="updated-resume-analysis">Updated Resume Analysis</TabsTrigger>
+                <TabsTrigger value="final-resume">Final Resume</TabsTrigger>
                 <TabsTrigger value="latex-resume">LaTeX Resume</TabsTrigger>
                 <TabsTrigger value="notes">Notes</TabsTrigger>
               </TabsList>
@@ -749,6 +782,15 @@ export default function Home() {
                 <ScrollArea className="h-[400px] w-full rounded-md border p-4">
                   <Markdown>{updatedResumeAnalysis}</Markdown>
                 </ScrollArea>
+              </TabsContent>
+              <TabsContent value="final-resume" className="mt-4">
+                <Label>Final Resume (Editable):</Label>
+                <Textarea
+                  value={finalResume}
+                  onChange={handleFinalResumeChange}
+                  className="h-64"
+                  placeholder="Paste or write your final resume here..."
+                />
               </TabsContent>
               <TabsContent value="latex-resume" className="mt-4">
                 <Label>LaTeX Resume:</Label>
