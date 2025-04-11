@@ -85,6 +85,10 @@ export default function Home() {
   const [sortColumn, setSortColumn] = useState<keyof JobApplication | null>("appliedDate");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
+  const [updatedResume, setUpdatedResume] = useState<string>("");
+  const [updatedResumeAnalysis, setUpdatedResumeAnalysis] = useState<string>("");
+  const [latexResume, setLatexResume] = useState<string>("");
+  const [keywordsAnalysis, setKeywordsAnalysis] = useState<string>("");
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -655,6 +659,10 @@ export default function Home() {
                 <TabsTrigger value="feedback">AI Feedback</TabsTrigger>
                 <TabsTrigger value="keywords">Keywords</TabsTrigger>
                 <TabsTrigger value="resume">Resume</TabsTrigger>
+                <TabsTrigger value="keyword-analysis">Keyword Analysis</TabsTrigger>
+                <TabsTrigger value="updated-resume">Updated Resume</TabsTrigger>
+                <TabsTrigger value="updated-resume-analysis">Updated Resume Analysis</TabsTrigger>
+                <TabsTrigger value="latex-resume">LaTeX Resume</TabsTrigger>
                 <TabsTrigger value="notes">Notes</TabsTrigger>
               </TabsList>
               <TabsContent value="details" className="mt-4">
@@ -722,6 +730,30 @@ export default function Home() {
                     <Markdown >
                         {resume}
                     </Markdown>
+                </ScrollArea>
+              </TabsContent>
+              <TabsContent value="keyword-analysis" className="mt-4">
+                <Label>Keyword Analysis:</Label>
+                <ScrollArea className="h-[200px] w-full rounded-md border p-4">
+                  <Markdown>{keywordsAnalysis}</Markdown>
+                </ScrollArea>
+              </TabsContent>
+              <TabsContent value="updated-resume" className="mt-4">
+                <Label>Updated Resume:</Label>
+                <ScrollArea className="h-[200px] w-full rounded-md border p-4">
+                  <Markdown>{updatedResume}</Markdown>
+                </ScrollArea>
+              </TabsContent>
+              <TabsContent value="updated-resume-analysis" className="mt-4">
+                <Label>Updated Resume Analysis:</Label>
+                <ScrollArea className="h-[200px] w-full rounded-md border p-4">
+                  <Markdown>{updatedResumeAnalysis}</Markdown>
+                </ScrollArea>
+              </TabsContent>
+              <TabsContent value="latex-resume" className="mt-4">
+                <Label>LaTeX Resume:</Label>
+                <ScrollArea className="h-[200px] w-full rounded-md border p-4">
+                  <Markdown>{latexResume}</Markdown>
                 </ScrollArea>
               </TabsContent>
               <TabsContent value="notes" className="mt-4">
