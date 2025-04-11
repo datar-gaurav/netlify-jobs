@@ -7,9 +7,17 @@ let SHEET_ID: string | undefined = process.env.GOOGLE_SHEET_ID;
 
 async function getSheetsAPI() {
   try {
+    // Decode base64 credentials
+    const credentialsBase64 = process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64;
+    if (!credentialsBase64) {
+      throw new Error('Credentials not found');
+    }
+    
+    const credentials = JSON.parse(Buffer.from(credentialsBase64, 'base64').toString('utf-8'));
+    
     const auth = new google.auth.GoogleAuth({
-      keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+      credentials, // Use decoded credentials directly
+      scopes: ['https://www.googleapis.com/auth/spreadsheets']
     });
 
     const authClient = await auth.getClient();
