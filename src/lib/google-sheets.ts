@@ -96,25 +96,35 @@ async function addHeaders(spreadsheetId: string, sheetName: string) {
   ];
 
   try {
-    // Check if headers already exist
     const existingHeaders = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${sheetName}!1:1`, // Get the first row
+      range: `${sheetName}!1:1`,
     });
 
     const existingValues = existingHeaders.data.values?.[0] || [];
-    const headersToAdd = headerValues[0].filter(header => !existingValues.includes(header));
 
-    if (headersToAdd.length > 0) {
-      const nextColumn = String.fromCharCode(65 + existingValues.length); // Get the next column letter (A, B, C, ...)
-      const range = `${sheetName}!${nextColumn}1`;
+    const updates = [];
+    headerValues[0].forEach((header, index) => {
+      if (!existingValues.includes(header)) {
+        const colLetter = String.fromCharCode(65 + index); // 'A' + index
+        const range = `${sheetName}!${colLetter}1`;
+        updates.push({ range, value: header });
+      }
+    });
 
+    for (const update of updates) {
       await sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: range,
+        range: update.range,
         valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [headersToAdd] },
+        requestBody: { values: [[update.value]] },
       });
+    }
+
+    if (updates.length > 0) {
+      console.log(`📝 Added ${updates.length} missing headers.`);
+    } else {
+      console.log('✅ All headers already present.');
     }
   } catch (error) {
     console.error('Error adding headers:', error);
