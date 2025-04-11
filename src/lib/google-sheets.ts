@@ -101,7 +101,7 @@ async function addHeaders(spreadsheetId: string, sheetName: string) {
     'Employer', 'Position', 'Location', 'Status', 'Applied Date',
     'Relevance', 'Job Description', 'Resume', 'Keywords', 'Notes', 'URL',
     'Updated Resume', 'Updated Resume Analysis', 'Latex Resume',
-    'Keyword Analysis', 'Final Resume'
+    'Keyword Analysis', 'Final Resume', 'INITIAL_RESUME'
   ];
 
   try {
@@ -140,7 +140,7 @@ export async function getJobPostings(): Promise<any[]> {
     const sheets = await getSheetsAPI();
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_TAB}!A1:Q`, // 17 columns
+      range: `${SHEET_TAB}!A1:R`, // 18 columns
     });
 
     const values = response?.data?.values || [];
@@ -162,6 +162,7 @@ export async function addJobToSheet(jobData: any) {
   if (!SHEET_ID) throw new Error('Sheet ID not set.');
 
   const keywordsString = jobData.keywords?.join(', ') || '';
+  console.log(jobData)
   const values = [
     [
       jobData.employer,
@@ -180,13 +181,14 @@ export async function addJobToSheet(jobData: any) {
       jobData.latexResume || '',
       jobData.keywordAnalysis || '',
       jobData.finalResume || '',
+      jobData.initialResume || '',
     ],
   ];
 
   try {
     const sheets = await getSheetsAPI();
     await sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID,
+      spreadsheetId: SHEET_ID!,
       range: `${SHEET_TAB}!A1:Q1`,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values },
@@ -226,7 +228,7 @@ export async function updateJobInSheet(jobData: any, rowIndex: number) {
   try {
     const sheets = await getSheetsAPI();
     await sheets.spreadsheets.values.update({
-      spreadsheetId: SHEET_ID,
+      spreadsheetId: SHEET_ID!,
       range: `${SHEET_TAB}!A${rowIndex}:Q${rowIndex}`,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values },
@@ -245,7 +247,7 @@ export async function deleteJobFromSheet(rowIndex: number) {
   try {
     const sheets = await getSheetsAPI();
     await sheets.spreadsheets.values.clear({
-      spreadsheetId: SHEET_ID,
+      spreadsheetId: SHEET_ID!,
       range: `${SHEET_TAB}!A${rowIndex}:Q${rowIndex}`,
     });
 
