@@ -666,7 +666,7 @@ export default function Home() {
                 <TabsTrigger value="notes">Notes</TabsTrigger>
               </TabsList>
               <TabsContent value="details" className="mt-4">
-                <ScrollArea className="h-[200px] w-full rounded-md border p-4 whitespace-pre-line">
+                <ScrollArea className="h-[400px] w-full rounded-md border p-4 whitespace-pre-line">
                   <Label>Job Description:</Label>
                   <Markdown >{selectedJob.jobDescription}</Markdown>
                 </ScrollArea>
@@ -700,7 +700,7 @@ export default function Home() {
                                 <Button variant="destructive" onClick={handleDeleteJob}><Trash className="h-4 w-4 mr-2" />Delete Job</Button>
               </TabsContent>
               <TabsContent value="feedback" className="mt-4">
-                <ScrollArea className="h-[200px] w-full rounded-md border p-4">
+                <ScrollArea className="h-[400px] w-full rounded-md border p-4">
                   <Label>Feedback:</Label>
                   <p className="whitespace-pre-line">{feedback}</p>
                 </ScrollArea>
@@ -708,7 +708,7 @@ export default function Home() {
               <TabsContent value="keywords" className="mt-4">
                 <Label>Keywords:</Label>
                  <ScrollArea className="h-[200px] w-full rounded-md border p-4">
-                    <Markdown >
+                    <Markdown>
                         {keywords.join(", ")}
                     </Markdown>
                 </ScrollArea>
@@ -726,33 +726,33 @@ export default function Home() {
               </TabsContent>
               <TabsContent value="resume" className="mt-4">
                 <Label>Your Resume:</Label>
-                <ScrollArea className="h-[200px] w-full rounded-md border p-4">
-                    <Markdown >
+                <ScrollArea className="h-[400px] w-full rounded-md border p-4">
+                    <Markdown>
                         {resume}
                     </Markdown>
                 </ScrollArea>
               </TabsContent>
               <TabsContent value="keyword-analysis" className="mt-4">
                 <Label>Keyword Analysis:</Label>
-                <ScrollArea className="h-[200px] w-full rounded-md border p-4">
+                <ScrollArea className="h-[400px] w-full rounded-md border p-4">
                   <Markdown>{keywordsAnalysis}</Markdown>
                 </ScrollArea>
               </TabsContent>
               <TabsContent value="updated-resume" className="mt-4">
                 <Label>Updated Resume:</Label>
-                <ScrollArea className="h-[200px] w-full rounded-md border p-4">
+                <ScrollArea className="h-[400px] w-full rounded-md border p-4">
                   <Markdown>{updatedResume}</Markdown>
                 </ScrollArea>
               </TabsContent>
               <TabsContent value="updated-resume-analysis" className="mt-4">
                 <Label>Updated Resume Analysis:</Label>
-                <ScrollArea className="h-[200px] w-full rounded-md border p-4">
+                <ScrollArea className="h-[400px] w-full rounded-md border p-4">
                   <Markdown>{updatedResumeAnalysis}</Markdown>
                 </ScrollArea>
               </TabsContent>
               <TabsContent value="latex-resume" className="mt-4">
                 <Label>LaTeX Resume:</Label>
-                <ScrollArea className="h-[200px] w-full rounded-md border p-4">
+                <ScrollArea className="h-[400px] w-full rounded-md border p-4">
                   <Markdown>{latexResume}</Markdown>
                 </ScrollArea>
               </TabsContent>
