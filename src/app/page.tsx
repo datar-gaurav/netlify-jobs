@@ -186,11 +186,26 @@ export default function Home() {
         const keywordAnalysis = await analyzeJobDescription({ jobDescription: selectedJob.jobDescription });
         setKeywords(keywordAnalysis.keywords);
 
-        const relevanceAnalysis = await analyzeJobRelevance({ jobDescription: selectedJob.jobDescription, resume: resume });
-        setRelevanceScore(relevanceAnalysis.relevanceScore);
+        const relevanceAnalysis = await analyzeJobRelevance({ jobDescription: selectedJob.jobDescription, resume: resume });        
+        const newRelevanceScore = relevanceAnalysis.relevanceScore;
+        setRelevanceScore(newRelevanceScore);
 
-                const feedbackAnalysis = await generateApplicationFeedback({jobDescription: selectedJob.jobDescription, resume: resume});
-                setFeedback(feedbackAnalysis.feedback);
+        // Update job applications state
+        setJobApplications(prevJobs =>
+          prevJobs.map(job =>
+            job.employer === selectedJob.employer && job.position === selectedJob.position
+              ? { ...job, relevance: newRelevanceScore }
+              : job
+          )
+        );
+
+        //Update Google Sheet
+        const rowIndex = jobApplications.findIndex(job => job.position === selectedJob.position && job.employer === selectedJob.employer) + 2;
+        const updatedJob = { ...selectedJob, relevance: newRelevanceScore };
+        await updateJobInSheet(updatedJob, rowIndex);
+
+        const feedbackAnalysis = await generateApplicationFeedback({jobDescription: selectedJob.jobDescription, resume: resume});
+        setFeedback(feedbackAnalysis.feedback);
       }
     };
 
