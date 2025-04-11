@@ -5,17 +5,20 @@ import {JobPosting} from '@/services/external-job-boards';
 
 let SHEET_ID: string | undefined = process.env.GOOGLE_SHEET_ID;
 
-async function getSheetsAPI() {
+export async function getSheetsAPI() {
   try {
-    const auth = new google.auth.GoogleAuth({
-      keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
+    const authClient = new google.auth.JWT(
+      process.env.GOOGLE_CREDENTIALS_CLIENT_EMAIL,
+      undefined,
+      process.env.GOOGLE_CREDENTIALS_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      ['https://www.googleapis.com/auth/spreadsheets']
+    );
 
-    const authClient = await auth.getClient();
-    return google.sheets({version: 'v4', auth: authClient});
+    await authClient.authorize(); // force connection
+
+    return google.sheets({ version: 'v4', auth: authClient });
   } catch (error) {
-    console.error('Error creating Google Sheets API:', error);
+    console.error('❌ Failed to initialize Sheets API:', error);
     throw error;
   }
 }
@@ -53,6 +56,12 @@ export async function initializeSheet() {
 }
 
 async function createSheet(): Promise<string> {
+  console.log('🔍 Checking credentials:', {
+    type: process.env.GOOGLE_CREDENTIALS_TYPE,
+    client_email: process.env.GOOGLE_CREDENTIALS_CLIENT_EMAIL,
+    private_key: process.env.GOOGLE_CREDENTIALS_PRIVATE_KEY?.slice(0, 30) + '...',
+  });
+  
   const sheets = await getSheetsAPI();
   const spreadsheet = {
     properties: {
