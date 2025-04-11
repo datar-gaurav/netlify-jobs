@@ -7,16 +7,25 @@ let SHEET_ID: string | undefined = process.env.GOOGLE_SHEET_ID;
 
 async function getSheetsAPI() {
   try {
-    // Decode base64 credentials
-    const credentialsBase64 = process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64;
-    if (!credentialsBase64) {
-      throw new Error('Credentials not found');
+    const credentials = {
+      type: process.env.GOOGLE_CREDENTIALS_TYPE,
+      project_id: process.env.GOOGLE_CREDENTIALS_PROJECT_ID,
+      private_key_id: process.env.GOOGLE_CREDENTIALS_PRIVATE_KEY_ID,
+      private_key: process.env.GOOGLE_CREDENTIALS_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      client_email: process.env.GOOGLE_CREDENTIALS_CLIENT_EMAIL,
+      client_id: process.env.GOOGLE_CREDENTIALS_CLIENT_ID,
+      auth_uri: 'https://accounts.google.com/o/oauth2/auth',
+      token_uri: 'https://oauth2.googleapis.com/token',
+      auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs',
+      client_x509_cert_url: process.env.GOOGLE_CREDENTIALS_CLIENT_X509_CERT_URL
+    };
+
+    if (!credentials.type || !credentials.private_key) {
+      throw new Error('Google credentials are incomplete');
     }
     
-    const credentials = JSON.parse(Buffer.from(credentialsBase64, 'base64').toString('utf-8'));
-    
     const auth = new google.auth.GoogleAuth({
-      credentials, // Use decoded credentials directly
+      credentials,
       scopes: ['https://www.googleapis.com/auth/spreadsheets']
     });
 
