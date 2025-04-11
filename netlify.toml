@@ -1,3 +1,5 @@
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["googleapis"]
+[build.environment]
+  NODE_OPTIONS = "--openssl-legacy-provider"
