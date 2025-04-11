@@ -180,7 +180,7 @@ export async function addJobToSheet(jobData: any) {
       jobData.updatedResumeAnalysis || '',
       jobData.latexResume || '',
       jobData.keywordAnalysis || '',
-      jobData.finalResume || '',
+      jobData.finalResume || '',      
       jobData.initialResume || '',
     ],
   ];
@@ -222,7 +222,8 @@ export async function updateJobInSheet(jobData: any, rowIndex: number) {
       jobData.latexResume || '',
       jobData.keywordAnalysis || '',
       jobData.finalResume || '',
-    ],
+      jobData.initialResume || '',
+    ]
   ];
 
   try {
