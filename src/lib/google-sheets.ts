@@ -85,14 +85,21 @@ async function createSheet(): Promise<string> {
   return spreadsheetId;
 }
 
+function getColumnLetter(index: number): string {
+  let letter = '';
+  while (index >= 0) {
+    letter = String.fromCharCode((index % 26) + 65) + letter;
+    index = Math.floor(index / 26) - 1;
+  }
+  return letter;
+}
+
 async function addHeaders(spreadsheetId: string, sheetName: string) {
   const sheets = await getSheetsAPI();
-  const headerValues = [
-    [
-      'Employer', 'Position', 'Location', 'Status', 'Applied Date',
-      'Relevance', 'Job Description', 'Resume', 'Keywords', 'Notes', 'URL',
-      'Updated Resume', 'Updated Resume Analysis', 'Latex Resume', 'Keyword Analysis'
-    ],
+  const desiredHeaders = [
+    'Employer', 'Position', 'Location', 'Status', 'Applied Date',
+    'Relevance', 'Job Description', 'Resume', 'Keywords', 'Notes', 'URL',
+    'Updated Resume', 'Updated Resume Analysis', 'Latex Resume', 'Keyword Analysis'
   ];
 
   try {
@@ -101,31 +108,25 @@ async function addHeaders(spreadsheetId: string, sheetName: string) {
       range: `${sheetName}!1:1`,
     });
 
-    const existingValues = existingHeaders.data.values?.[0] || [];
+    const currentHeaders = existingHeaders.data.values?.[0] || [];
 
-    const updates = [];
-    headerValues[0].forEach((header, index) => {
-      if (!existingValues.includes(header)) {
-        const colLetter = String.fromCharCode(65 + index); // 'A' + index
+    for (let i = 0; i < desiredHeaders.length; i++) {
+      if (!currentHeaders[i]) {
+        const colLetter = getColumnLetter(i);
         const range = `${sheetName}!${colLetter}1`;
-        updates.push({ range, value: header });
+
+        await sheets.spreadsheets.values.update({
+          spreadsheetId,
+          range,
+          valueInputOption: 'USER_ENTERED',
+          requestBody: { values: [[desiredHeaders[i]]] },
+        });
+
+        console.log(`✅ Added missing header "${desiredHeaders[i]}" at column ${colLetter}`);
       }
-    });
-
-    for (const update of updates) {
-      await sheets.spreadsheets.values.update({
-        spreadsheetId,
-        range: update.range,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [[update.value]] },
-      });
     }
 
-    if (updates.length > 0) {
-      console.log(`📝 Added ${updates.length} missing headers.`);
-    } else {
-      console.log('✅ All headers already present.');
-    }
+    console.log('✅ Header check complete.');
   } catch (error) {
     console.error('Error adding headers:', error);
     throw error;
