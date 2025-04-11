@@ -102,7 +102,8 @@ interface JobApplication {
   keywords: string[];
   notes: string;
   url: string;
-  finalResume: string;
+    initialResume: string;
+    finalResume: string;
 }
 
 const INITIAL_RESUME = `
@@ -114,7 +115,7 @@ const STATUS_OPTIONS = ['Screening', 'Applied', 'Interviewing', 'Offer Received'
 export default function Home() {
   const [jobApplications, setJobApplications] = useState<JobApplication[]>([]);
   const [selectedJob, setSelectedJob] = useState<JobApplication | null>(null);
-  const [resume, setResume] = useState<string>(INITIAL_RESUME);
+    const [resume, setResume] = useState<string>("");
   const [finalResume, setFinalResume] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
   const [keywords, setKeywords] = useState<string[]>([]);
@@ -158,12 +159,13 @@ export default function Home() {
           appliedDate: job['Applied Date'],
           relevance: job.Relevance != null ? parseFloat(job.Relevance) : null,
           jobDescription: job['Job Description'],
-          resume: job.Resume,
-finalResume: job['Final Resume'] || "", 
+            resume: job.INITIAL_RESUME || "",
+            initialResume: job.INITIAL_RESUME,
+            finalResume: job['Final Resume'] || "",
           keywords: job.Keywords ? job.Keywords.split(',').map((keyword: string) => keyword.trim()) : [],
           notes: job.Notes,
           url: job.URL,
-        }));
+        })) as JobApplication[];
         setJobApplications(initialApplications);
       } catch (error) {
         console.error("Error fetching job data:", error);
@@ -205,17 +207,16 @@ finalResume: job['Final Resume'] || "",
     };
 
     const saveResume = async () =>
-    {
-        // Update the resume in the selected job and Google Sheet
-        if (selectedJob)
-        {
-            try
-            {
-                const updatedJob = { ...selectedJob, resume: resume };
+    {        // Update the resume in the selected job and Google Sheet
+        if (selectedJob) {
+            try {
+                const updatedJob = { ...selectedJob, resume: resume, initialResume: resume };
                 setSelectedJob(updatedJob);
-                await updateJobInSheet(updatedJob, jobApplications.findIndex(job => job.position === selectedJob.position && job.employer === selectedJob.employer) + 2, updatedJob.keywords);
+                const rowIndex = jobApplications.findIndex(job => job.position === selectedJob.position && job.employer === selectedJob.employer) + 2;
+                await updateJobInSheet(updatedJob, rowIndex);
                 setJobApplications(jobApplications.map(job =>
-                    job.employer === selectedJob.employer && job.position === selectedJob.position ? { ...job, resume: resume } : job
+                    job.employer === selectedJob.employer && job.position === selectedJob.position ?
+                        { ...job, resume: resume, initialResume: resume } : job
                 ));
                 setResumeOpen(false);
                 toast({
@@ -223,8 +224,7 @@ finalResume: job['Final Resume'] || "",
                     description: "Your resume has been successfully updated.",
                 });
             } catch (error)
-            {
-                console.error("Error updating resume:", error);
+            {                console.error("Error updating resume:", error);
                 toast({
                     title: "Error",
                     description: "Failed to update the resume in Google Sheets.",
@@ -246,7 +246,7 @@ finalResume: job['Final Resume'] || "",
           job => job.position === selectedJob.position && job.employer === selectedJob.employer
         ) + 2;
     
-        updateJobInSheet(updatedJob, rowIndex).catch((error) => {
+        updateJobInSheet(updatedJob, rowIndex).catch((error) => {            
           console.error("Error updating final resume:", error);
           toast({
             title: "Error",
@@ -269,7 +269,7 @@ finalResume: job['Final Resume'] || "",
     if (selectedJob) {
       const updatedJob = { ...selectedJob, notes: e.target.value };
             setSelectedJob(updatedJob);
-            updateJobInSheet(updatedJob, jobApplications.findIndex(job => job.position === selectedJob.position && job.employer === selectedJob.employer) + 2, updatedJob.keywords); // +2 offset to account for header row
+            updateJobInSheet(updatedJob, jobApplications.findIndex(job => job.position === selectedJob.position && job.employer === selectedJob.employer) + 2); // +2 offset to account for header row
       setJobApplications(jobApplications.map(job =>
         job.employer === selectedJob.employer && job.position === selectedJob.position ? {...job, notes: e.target.value} : job
       ));
@@ -280,7 +280,7 @@ finalResume: job['Final Resume'] || "",
     if (selectedJob) {
       const updatedJob = { ...selectedJob, status: status };
             setSelectedJob(updatedJob);
-            updateJobInSheet(updatedJob, jobApplications.findIndex(job => job.position === selectedJob.position && job.employer === selectedJob.employer) + 2, updatedJob.keywords); // +2 offset to account for header row
+            updateJobInSheet(updatedJob, jobApplications.findIndex(job => job.position === selectedJob.position && job.employer === selectedJob.employer) + 2); // +2 offset to account for header row
       setJobApplications(jobApplications.map(job =>
         job.employer === selectedJob.employer && job.position === selectedJob.position ? {...job, status: status} : job
       ));
@@ -300,7 +300,8 @@ finalResume: job['Final Resume'] || "",
       appliedDate: new Date().toLocaleDateString(),
       relevance: 0,
       jobDescription: newJobDescription,
-      resume: resume,
+        resume: resume,
+        initialResume: resume,
       keywords: keywords, // Use the current keywords state
       notes: '',
       url: newJobUrl,
@@ -336,7 +337,8 @@ finalResume: job['Final Resume'] || "",
         appliedDate: job['Applied Date'],
         relevance: job.Relevance != null ? parseFloat(job.Relevance) : null,
         jobDescription: job['Job Description'],
-        resume: job.Resume,
+          resume: job.INITIAL_RESUME || "",
+          initialResume: job.INITIAL_RESUME,
         keywords: job.Keywords ? job.Keywords.split(',').map((keyword: string) => keyword.trim()) : [],
         notes: job.Notes,
         url: job.URL,
@@ -381,7 +383,8 @@ finalResume: job['Final Resume'] || "",
                     appliedDate: job['Applied Date'],
                     relevance: job.Relevance != null ? parseFloat(job.Relevance) : null,
                     jobDescription: job['Job Description'],
-                    resume: job.Resume,
+                        resume: job.INITIAL_RESUME || "",
+                        initialResume: job.INITIAL_RESUME,
                     keywords: job.Keywords ? job.Keywords.split(',').map((keyword: string) => keyword.trim()) : [],
                     notes: job.Notes,
                     url: job.URL,
@@ -464,7 +467,7 @@ finalResume: job['Final Resume'] || "",
 
         try
         {
-            await updateJobInSheet(updatedJob, index + 2, updatedJob.keywords);
+            await updateJobInSheet(updatedJob, index + 2);
             const updatedApplications = [...jobApplications];
             updatedApplications[index] = updatedJob;
             setJobApplications(updatedApplications);
