@@ -128,7 +128,11 @@ export async function getJobPostings(): Promise<any[]> {
     return rows.map(row => {
       const obj: { [key: string]: any } = {};
       headers.forEach((h, i) => (obj[h] = row[i] || ''));
-      return obj;
+      return {
+        ...obj,
+        'Updated Resume': row[11] || '',
+        'Updated Resume Analysis': row[12] || '',
+      };
     });
   } catch (error) {
     console.error('Error getting job postings:', error);
@@ -140,6 +144,10 @@ export async function addJobToSheet(jobData: any) {
   if (!SHEET_ID) throw new Error('Sheet ID not set.');
 
   const keywordsString = jobData.keywords?.join(', ') || '';
+  const updatedResume = jobData.updatedResume || '';
+  const updatedResumeAnalysis = jobData.updatedResumeAnalysis || '';
+  const latexResume = jobData.latexResume || '';
+  const keywordAnalysis = jobData.keywordAnalysis || '';
   const values = [
     [
       jobData.employer,
@@ -152,6 +160,10 @@ export async function addJobToSheet(jobData: any) {
       jobData.resume,
       keywordsString,
       jobData.notes,
+      jobData.url,
+      updatedResume,
+      updatedResumeAnalysis,
+      latexResume,
       jobData.url,
     ],
   ];
@@ -175,20 +187,26 @@ export async function addJobToSheet(jobData: any) {
 export async function updateJobInSheet(jobData: any, rowIndex: number) {
   if (!SHEET_ID) throw new Error('Sheet ID not set.');
 
-  const keywordsString = jobData.keywords?.join(', ') || '';
   const values = [
     [
-      jobData.employer,
-      jobData.position,
-      jobData.location,
-      jobData.status,
-      jobData.appliedDate,
-      jobData.relevance,
-      jobData.jobDescription,
-      jobData.resume,
-      keywordsString,
-      jobData.notes,
-      jobData.url,
+      jobData.employer || '',
+      jobData.position || '',
+      jobData.location || '',
+      jobData.status || '',
+      jobData.appliedDate || '',
+      jobData.relevance || '',
+      jobData.jobDescription || '',
+      jobData.resume || '',
+      jobData.keywords?.join(', ') || '',
+      jobData.notes || '',
+      jobData.url || '',
+      jobData.updatedResume || '',
+      jobData.updatedResumeAnalysis || '',
+      jobData.latexResume || '',
+      jobData.keywordAnalysis || '',
+
+      // Add other fields here as needed, ensure the order matches your sheet
+      // Example: jobData.otherField || '',
     ],
   ];
 
@@ -196,7 +214,7 @@ export async function updateJobInSheet(jobData: any, rowIndex: number) {
     const sheets = await getSheetsAPI();
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_TAB}!A${rowIndex}:K${rowIndex}`,
+      range: `${SHEET_TAB}!A${rowIndex}:O${rowIndex}`, // Adjusted range to include new columns
       valueInputOption: 'USER_ENTERED',
       requestBody: { values },
     });
