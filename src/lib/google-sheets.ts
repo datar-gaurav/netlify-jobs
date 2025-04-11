@@ -22,6 +22,15 @@ async function getSheetsAPI() {
   }
 }
 
+function getColumnLetter(index: number): string {
+  let letter = '';
+  while (index >= 0) {
+    letter = String.fromCharCode((index % 26) + 65) + letter;
+    index = Math.floor(index / 26) - 1;
+  }
+  return letter;
+}
+
 export async function initializeSheet() {
   if (!process.env.GOOGLE_SHEET_ID) {
     console.log('GOOGLE_SHEET_ID not found, creating new sheet...');
@@ -55,6 +64,7 @@ export async function initializeSheet() {
       await addHeaders(spreadsheetId, SHEET_TAB);
     } else {
       console.log(`✅ Sheet "${SHEET_TAB}" already exists.`);
+      await addHeaders(spreadsheetId, SHEET_TAB); // Ensure headers are updated
     }
   } catch (error) {
     console.error('Error initializing sheet:', error);
@@ -85,21 +95,13 @@ async function createSheet(): Promise<string> {
   return spreadsheetId;
 }
 
-function getColumnLetter(index: number): string {
-  let letter = '';
-  while (index >= 0) {
-    letter = String.fromCharCode((index % 26) + 65) + letter;
-    index = Math.floor(index / 26) - 1;
-  }
-  return letter;
-}
-
 async function addHeaders(spreadsheetId: string, sheetName: string) {
   const sheets = await getSheetsAPI();
   const desiredHeaders = [
     'Employer', 'Position', 'Location', 'Status', 'Applied Date',
     'Relevance', 'Job Description', 'Resume', 'Keywords', 'Notes', 'URL',
-    'Updated Resume', 'Updated Resume Analysis', 'Latex Resume', 'Keyword Analysis'
+    'Updated Resume', 'Updated Resume Analysis', 'Latex Resume',
+    'Keyword Analysis', 'Final Resume'
   ];
 
   try {
@@ -125,8 +127,6 @@ async function addHeaders(spreadsheetId: string, sheetName: string) {
         console.log(`✅ Added missing header "${desiredHeaders[i]}" at column ${colLetter}`);
       }
     }
-
-    console.log('✅ Header check complete.');
   } catch (error) {
     console.error('Error adding headers:', error);
     throw error;
@@ -140,7 +140,7 @@ export async function getJobPostings(): Promise<any[]> {
     const sheets = await getSheetsAPI();
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_TAB}!A1:K`,
+      range: `${SHEET_TAB}!A1:Q`, // 17 columns
     });
 
     const values = response?.data?.values || [];
@@ -150,11 +150,7 @@ export async function getJobPostings(): Promise<any[]> {
     return rows.map(row => {
       const obj: { [key: string]: any } = {};
       headers.forEach((h, i) => (obj[h] = row[i] || ''));
-      return {
-        ...obj,
-        'Updated Resume': row[11] || '',
-        'Updated Resume Analysis': row[12] || '',
-      };
+      return obj;
     });
   } catch (error) {
     console.error('Error getting job postings:', error);
@@ -166,10 +162,6 @@ export async function addJobToSheet(jobData: any) {
   if (!SHEET_ID) throw new Error('Sheet ID not set.');
 
   const keywordsString = jobData.keywords?.join(', ') || '';
-  const updatedResume = jobData.updatedResume || '';
-  const updatedResumeAnalysis = jobData.updatedResumeAnalysis || '';
-  const latexResume = jobData.latexResume || '';
-  const keywordAnalysis = jobData.keywordAnalysis || '';
   const values = [
     [
       jobData.employer,
@@ -183,10 +175,11 @@ export async function addJobToSheet(jobData: any) {
       keywordsString,
       jobData.notes,
       jobData.url,
-      updatedResume,
-      updatedResumeAnalysis,
-      latexResume,
-      jobData.url,
+      jobData.updatedResume || '',
+      jobData.updatedResumeAnalysis || '',
+      jobData.latexResume || '',
+      jobData.keywordAnalysis || '',
+      jobData.finalResume || '',
     ],
   ];
 
@@ -194,7 +187,7 @@ export async function addJobToSheet(jobData: any) {
     const sheets = await getSheetsAPI();
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_TAB}!A1:K1`,
+      range: `${SHEET_TAB}!A1:Q1`,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values },
     });
@@ -226,9 +219,7 @@ export async function updateJobInSheet(jobData: any, rowIndex: number) {
       jobData.updatedResumeAnalysis || '',
       jobData.latexResume || '',
       jobData.keywordAnalysis || '',
-
-      // Add other fields here as needed, ensure the order matches your sheet
-      // Example: jobData.otherField || '',
+      jobData.finalResume || '',
     ],
   ];
 
@@ -236,7 +227,7 @@ export async function updateJobInSheet(jobData: any, rowIndex: number) {
     const sheets = await getSheetsAPI();
     await sheets.spreadsheets.values.update({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_TAB}!A${rowIndex}:O${rowIndex}`, // Adjusted range to include new columns
+      range: `${SHEET_TAB}!A${rowIndex}:Q${rowIndex}`,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values },
     });
@@ -255,7 +246,7 @@ export async function deleteJobFromSheet(rowIndex: number) {
     const sheets = await getSheetsAPI();
     await sheets.spreadsheets.values.clear({
       spreadsheetId: SHEET_ID,
-      range: `${SHEET_TAB}!A${rowIndex}:K${rowIndex}`,
+      range: `${SHEET_TAB}!A${rowIndex}:Q${rowIndex}`,
     });
 
     console.log(`🗑️ Job deleted at row ${rowIndex}`);
