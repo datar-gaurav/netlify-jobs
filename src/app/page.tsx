@@ -113,7 +113,6 @@ export default function Home() {
   const [jobApplications, setJobApplications] = useState<JobApplication[]>([]);
   const [selectedJob, setSelectedJob] = useState<JobApplication | null>(null);
     const [resume, setResume] = useState<string>("");
-  const [finalResume, setFinalResume] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
     const [feedback, setFeedback] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -132,12 +131,8 @@ export default function Home() {
   // Sorting
   const [sortColumn, setSortColumn] = useState<keyof JobApplication | null>("appliedDate");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
 
   useEffect(() => {
-    const fetchJobData = async () => {
-      try {
         await initializeSheet();
         const jobData = await getJobPostings();
         const initialApplications: JobApplication[] = jobData.map(job => ({
@@ -149,7 +144,6 @@ export default function Home() {
           relevance: job.Relevance != null ? parseFloat(job.Relevance) : null,
           jobDescription: job['Job Description'],
             resume: job.INITIAL_RESUME || "",
-            initialResume: job.INITIAL_RESUME,
             finalResume: job['Final Resume'] || "",
           keywords: job.Keywords ? job.Keywords.split(',').map((keyword: string) => keyword.trim()) : [],
           notes: job.Notes,
@@ -163,9 +157,6 @@ export default function Home() {
           description: "Failed to fetch job data from Google Sheets.",
           variant: "destructive",
         });
-      }
-    };
-
     fetchJobData();
   }, []);
 
@@ -205,36 +196,6 @@ export default function Home() {
             }
         }
     };
-
-    const handleFinalResumeChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const newFinalResume = e.target.value;
-      setFinalResume(newFinalResume);
-    
-      if (selectedJob) {
-        const updatedJob = { ...selectedJob, finalResume: newFinalResume };
-        setSelectedJob(updatedJob);
-    
-        const rowIndex = jobApplications.findIndex(
-          job => job.position === selectedJob.position && job.employer === selectedJob.employer
-        ) + 2;
-    
-        updateJobInSheet(updatedJob, rowIndex).catch((error) => {            
-          console.error("Error updating final resume:", error);
-          toast({
-            title: "Error",
-            description: "Failed to update Final Resume in Google Sheets.",
-            variant: "destructive",
-          });
-        });
-    
-        setJobApplications(jobApplications.map(job =>
-          job.employer === selectedJob.employer && job.position === selectedJob.position
-            ? { ...job, finalResume: newFinalResume }
-            : job
-        ));
-      }
-    };
-
 
   const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setNotes(e.target.value);
@@ -278,12 +239,6 @@ export default function Home() {
       notes: '',
       url: newJobUrl,
     };
-
-      // Assuming the first keyword is the position, second is employer, and third is location (This is a naive approach)
-      if (extractedKeywords.length >= 3) {
-        newJob.position = extractedKeywords[0];
-        newJob.employer = extractedKeywords[1];
-        newJob.location = extractedKeywords[2];
       }
 
       await addJobToSheet(newJob);
@@ -305,7 +260,6 @@ export default function Home() {
         relevance: job.Relevance != null ? parseFloat(job.Relevance) : null,
         jobDescription: job['Job Description'],
           resume: job.INITIAL_RESUME || "",
-          initialResume: job.INITIAL_RESUME,
         keywords: job.Keywords ? job.Keywords.split(',').map((keyword: string) => keyword.trim()) : [],
         notes: job.Notes,
         url: job.URL,
@@ -319,7 +273,7 @@ export default function Home() {
         variant: "destructive",
       });
     }
-  };
+  }
 
     const handleDeleteJob = async () => {
         if (selectedJob) {
@@ -350,8 +304,6 @@ export default function Home() {
                     appliedDate: job['Applied Date'],
                     relevance: job.Relevance != null ? parseFloat(job.Relevance) : null,
                     jobDescription: job['Job Description'],
-                        resume: job.INITIAL_RESUME || "",
-                        initialResume: job.INITIAL_RESUME,
                     keywords: job.Keywords ? job.Keywords.split(',').map((keyword: string) => keyword.trim()) : [],
                     notes: job.Notes,
                     url: job.URL,
@@ -396,73 +348,12 @@ export default function Home() {
                 }
                 if (valueA > valueB)
                 {
-                    return sortDirection === "asc" ? 1 : -1;
-                }
-                return 0;
+                return sortDirection === "asc" ? 1 : -1
+              }
+              return 0
             }
-    });
-    }, [jobApplications, sortColumn, sortDirection]);
-
-    // Pagination
-    const paginatedApplications = useMemo(() =>
-    {
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        return sortedApplications.slice(startIndex, endIndex);
-    }, [sortedApplications, currentPage, itemsPerPage]);
-
-    const totalPages = Math.ceil(sortedApplications.length / itemsPerPage);
-
-    const handleEdit = (index: number, job: JobApplication) =>
-    {
-        setEditingRow(index);
-        setEditedEmployer(job.employer);
-        setEditedPosition(job.position);
-        setEditedLocation(job.location);
-    };
-
-    const handleSave = async (index: number, job: JobApplication) =>
-    {
-        const updatedJob = {
-            ...job,
-            employer: editedEmployer,
-            position: editedPosition,
-            location: editedLocation,
-        };
-
-        try
-        {
-            await updateJobInSheet(updatedJob, index + 2);
-            const updatedApplications = [...jobApplications];
-            updatedApplications[index] = updatedJob;
-            setJobApplications(updatedApplications);
-            setEditingRow(null);
-            toast({
-                title: "Job updated!",
-                description: "The job has been successfully updated.",
-            });
-        } catch (error)
-        {
-            console.error("Error updating job:", error);
-            toast({
-                title: "Error",
-                description: "Failed to update the job in Google Sheets.",
-                variant: "destructive",
-            });
-        }
-    };
-
-  /*const getMissingKeywords = () => {
-    if (!selectedJob || !resume) return [];
-
-    const resumeKeywords = resume.toLowerCase().split(/\s+/);
-    const jobKeywordsLower = selectedJob.keywords.map(keyword => keyword.toLowerCase());
-
-    return jobKeywordsLower.filter(keyword => !resumeKeywords.includes(keyword));
-  };
-
-  const missingKeywords = useMemo(getMissingKeywords, [selectedJob, resume]);*/
-
+    })
+  }, [jobApplications, sortColumn, sortDirection])
 
   return (
     <div className="container mx-auto p-4 flex flex-col gap-4">
@@ -528,49 +419,6 @@ export default function Home() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-                      <Dialog open={resumeOpen} onOpenChange={setResumeOpen}>
-                          <DialogTrigger asChild>
-                              <Button variant="outline">Add Resume</Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                              <DialogHeader>
-                                  <DialogTitle>Add Resume (Markdown)</DialogTitle>
-                                  <DialogDescription>
-                                      Enter your resume in Markdown format.
-                                  </DialogDescription>
-                              </DialogHeader>
-                              <div className="grid gap-4 py-4">
-                                  <div className="grid grid-cols-4 items-center gap-4">
-                                      <Label htmlFor="resume-markdown" className="text-right">
-                                          Resume (Markdown)
-                                      </Label>
-                                      <Textarea
-                                          id="resume-markdown"
-                                          value={resume}
-                                          onChange={handleResumeChange}
-                                          className="col-span-3"
-                                      />
-                                  </div>
-                              </div>
-                              <DialogFooter>
-                                  <Button type="button" onClick={saveResume}>
-                                      Save Resume
-                                  </Button>
-                              </DialogFooter>
-                          </DialogContent>
-                      </Dialog>
-               <Select value={String(itemsPerPage)} onValueChange={(value) => setItemsPerPage(Number(value))}>
-                  <SelectTrigger className="w-[120px]">
-                      <SelectValue placeholder="Items per page" />
-                  </SelectTrigger>
-                  <SelectContent>
-                      {[5, 10, 15, 20].map((option) => (
-                          <SelectItem key={option} value={String(option)}>
-                              {option}
-                          </SelectItem>
-                      ))}
-                  </SelectContent>
-              </Select>
           </div>
           <div className="overflow-x-auto">
             <Table>
@@ -671,125 +519,6 @@ export default function Home() {
                   </TableRow>
                 ))}
               </TableBody>
-            </Table>
-          </div>
-          {/* Pagination controls */}
-          <div className="flex justify-between items-center mt-4">
-            <Button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              variant="outline"
-              size="sm"
-            >
-              Previous
-            </Button>
-            <span>{`Page ${currentPage} of ${totalPages}`}</span>
-            <Button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              variant="outline"
-              size="sm"
-            >
-              Next
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {selectedJob && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Job Details</CardTitle>
-            <CardDescription>Details for {selectedJob.position} at {selectedJob.employer}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="details" className="w-full">
-              <TabsList>
-                <TabsTrigger value="details">Job Details</TabsTrigger>
-                <TabsTrigger value="feedback">AI Feedback</TabsTrigger>
-                <TabsTrigger value="keywords">Keywords</TabsTrigger>
-                <TabsTrigger value="resume">Resume</TabsTrigger>
-                <TabsTrigger value="keyword-analysis">Keyword Analysis</TabsTrigger>
-                <TabsTrigger value="updated-resume">Updated Resume</TabsTrigger>
-                <TabsTrigger value="updated-resume-analysis">Updated Resume Analysis</TabsTrigger>
-                <TabsTrigger value="final-resume">Final Resume</TabsTrigger>
-                <TabsTrigger value="latex-resume">LaTeX Resume</TabsTrigger>
-                <TabsTrigger value="notes">Notes</TabsTrigger>
-              </TabsList>
-              <TabsContent value="details" className="mt-4">
-                <ScrollArea className="h-[400px] w-full rounded-md border p-4 whitespace-pre-line">
-                  <Label>Job Description:</Label>
-                  <Markdown >{selectedJob.jobDescription}</Markdown>
-                </ScrollArea>
-                <div>
-                  <Label>URL:</Label>
-                  <a href={selectedJob.url} target="_blank" rel="noopener noreferrer" className="text-teal-500 hover:underline">
-                    View Job Posting
-                  </a>
-                </div>
-                <div>
-                  <Label>Relevance Score:</Label>
-                  <Badge variant={relevanceScore && relevanceScore > 0.7 ? "default" : relevanceScore && relevanceScore > 0.4 ? "secondary" : "outline"}>
-                    {relevanceScore ? (relevanceScore * 100).toFixed(0) + "%" : "N/A"}
-                  </Badge>
-                </div>
-                <div>
-                  <Label>Status:</Label>
-                  <Select value={selectedJob.status} onValueChange={handleStatusChange}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATUS_OPTIONS.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {status}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                                <Button variant="destructive" onClick={handleDeleteJob}><Trash className="h-4 w-4 mr-2" />Delete Job</Button>
-              </TabsContent>
-              <TabsContent value="feedback" className="mt-4">
-              <TabsContent value="keywords" className="mt-4">
-                <Label>Keywords:</Label>
-                 <ScrollArea className="h-[200px] w-full rounded-md border p-4">
-                    <Markdown>
-                        {keywords.join(", ")}
-                    </Markdown>
-                </ScrollArea>
-              </TabsContent>
-              <TabsContent value="updated-resume" className="mt-4">
-                <Label>Updated Resume:</Label>
-                <ScrollArea className="h-[400px] w-full rounded-md border p-4">
-                  <Markdown>{updatedResume}</Markdown>
-                </ScrollArea>                
-              </TabsContent>
-              <TabsContent value="updated-resume-analysis" className="mt-4">
-                <Label>Updated Resume Analysis:</Label>
-                <ScrollArea className="h-[400px] w-full rounded-md border p-4">
-                  <Markdown>{updatedResumeAnalysis}</Markdown>
-                </ScrollArea>
-              </TabsContent>
-              <TabsContent value="final-resume" className="mt-4">
-                <Label>Final Resume (Editable):</Label>
-                <Textarea
-                  value={finalResume}
-                  onChange={handleFinalResumeChange}
-                  className="h-64"
-                  placeholder="Paste or write your final resume here..."
-                />
-              </TabsContent>
-              <TabsContent value="latex-resume" className="mt-4">
-                <Label>LaTeX Resume:</Label>
-                <ScrollArea className="h-[400px] w-full rounded-md border p-4">
-                  <Markdown>{latexResume}</Markdown>
-                </ScrollArea>
-              </TabsContent>
-              <TabsContent value="notes" className="mt-4">
-                <Label>Notes:</Label>
-                <Textarea value={notes} onChange={handleNotesChange} className="h-40" />
-              </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
