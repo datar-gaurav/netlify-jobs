@@ -345,7 +345,7 @@ export default function Home() {
                 const updatedApplications: JobApplication[] = updatedJobData.map(job => ({
                     employer: job.Employer,
                     position: job.Position,
-                    location: job.Location,
+                    location: job.Location,  
                     status: job.Status,
                     appliedDate: job['Applied Date'],
                     relevance: job.Relevance != null ? parseFloat(job.Relevance) : null,
@@ -358,7 +358,7 @@ export default function Home() {
                 }));
                 setJobApplications(updatedApplications);
             }
-        }
+        } 
     };
 
   const handleSort = (column: keyof JobApplication) => {
