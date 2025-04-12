@@ -10,10 +10,6 @@ import {
   TableCell,
   TableCaption,
 } from "@/components/ui/table";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { analyzeJobDescription } from "@/ai/flows/job-keyword-analyzer";
-import { analyzeJobRelevance } from "@/ai/flows/job-relevance-analyzer";
-import { generateApplicationFeedback } from "@/ai/flows/application-feedback-generator";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import {
@@ -118,8 +115,6 @@ export default function Home() {
     const [resume, setResume] = useState<string>("");
   const [finalResume, setFinalResume] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
-  const [keywords, setKeywords] = useState<string[]>([]);
-  const [relevanceScore, setRelevanceScore] = useState<number | null>(null);
     const [feedback, setFeedback] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [open, setOpen] = useState(false);
@@ -137,12 +132,6 @@ export default function Home() {
   // Sorting
   const [sortColumn, setSortColumn] = useState<keyof JobApplication | null>("appliedDate");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-
-  const [updatedResume, setUpdatedResume] = useState<string>("");
-  const [updatedResumeAnalysis, setUpdatedResumeAnalysis] = useState<string>("");
-  const [latexResume, setLatexResume] = useState<string>("");
-  const [keywordsAnalysis, setKeywordsAnalysis] = useState<string>("");
-  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
 
@@ -179,38 +168,6 @@ export default function Home() {
 
     fetchJobData();
   }, []);
-
-  useEffect(() => {
-    const analyzeJob = async () => {
-      if (selectedJob) {
-        const keywordAnalysis = await analyzeJobDescription({ jobDescription: selectedJob.jobDescription });
-        setKeywords(keywordAnalysis.keywords);
-
-        const relevanceAnalysis = await analyzeJobRelevance({ jobDescription: selectedJob.jobDescription, resume: resume });        
-        const newRelevanceScore = relevanceAnalysis.relevanceScore;
-        setRelevanceScore(newRelevanceScore);
-
-        // Update job applications state
-        setJobApplications(prevJobs =>
-          prevJobs.map(job =>
-            job.employer === selectedJob.employer && job.position === selectedJob.position
-              ? { ...job, relevance: newRelevanceScore }
-              : job
-          )
-        );
-
-        //Update Google Sheet
-        const rowIndex = jobApplications.findIndex(job => job.position === selectedJob.position && job.employer === selectedJob.employer) + 2;
-        const updatedJob = { ...selectedJob, relevance: newRelevanceScore };
-        await updateJobInSheet(updatedJob, rowIndex);
-
-        const feedbackAnalysis = await generateApplicationFeedback({jobDescription: selectedJob.jobDescription, resume: resume});
-        setFeedback(feedbackAnalysis.feedback);
-      }
-    };
-
-    analyzeJob();
-  }, [selectedJob, resume]);
 
     const handleRowClick = (job: JobApplication) => {
         setSelectedJob(job);
@@ -322,11 +279,6 @@ export default function Home() {
       url: newJobUrl,
     };
 
-    try {
-      // Extract employer, position, and location using AI
-      const keywordAnalysis = await analyzeJobDescription({ jobDescription: newJobDescription });
-      const extractedKeywords = keywordAnalysis.keywords;
-
       // Assuming the first keyword is the position, second is employer, and third is location (This is a naive approach)
       if (extractedKeywords.length >= 3) {
         newJob.position = extractedKeywords[0];
@@ -409,37 +361,35 @@ export default function Home() {
         }
     };
 
-    const handleSort = (column: keyof JobApplication) =>
-    {
-        if (column === sortColumn)
-        {
-            setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-        } else
-        {
-            setSortColumn(column);
-            setSortDirection("asc");
+  const handleSort = (column: keyof JobApplication) => {
+    if (column === sortColumn) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const sortedApplications = useMemo(() => {
+    if (!sortColumn) return jobApplications;
+
+    return [...jobApplications].sort((a, b) => {
+      const valueA = a[sortColumn];
+      const valueB = b[sortColumn];
+
+      if (typeof valueA === 'string' && typeof valueB === 'string') {
+        return sortDirection === "asc" ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
+      } else {
+        // Handle non-string comparisons, e.g., for numbers or dates
+        if (valueA === null || valueB === null) {
+          return 0;
         }
-    };
-
-    const sortedApplications = useMemo(() =>
-    {
-        if (!sortColumn) return jobApplications;
-
-        return [...jobApplications].sort((a, b) =>
-        {
-            const valueA = a[sortColumn];
-            const valueB = b[sortColumn];
-
-            if (typeof valueA === 'string' && typeof valueB === 'string')
-            {
-                return sortDirection === "asc" ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
-            } else
-            {
-                // Handle non-string comparisons, e.g., for numbers or dates
-                if (valueA === null || valueB === null)
-                {
-                    return 0;
-                }
+        if (typeof valueA === 'number' && typeof valueB === 'number') {
+          return sortDirection === "asc" ? valueA - valueB : valueB - valueA;
+        }
+        if (valueA instanceof Date && valueB instanceof Date) {
+          return sortDirection === "asc" ? valueA.getTime() - valueB.getTime() : valueB.getTime() - valueA.getTime();
+        }
                 if (valueA < valueB)
                 {
                     return sortDirection === "asc" ? -1 : 1;
@@ -450,7 +400,7 @@ export default function Home() {
                 }
                 return 0;
             }
-        });
+    });
     }, [jobApplications, sortColumn, sortDirection]);
 
     // Pagination
@@ -502,7 +452,7 @@ export default function Home() {
         }
     };
 
-  const getMissingKeywords = () => {
+  /*const getMissingKeywords = () => {
     if (!selectedJob || !resume) return [];
 
     const resumeKeywords = resume.toLowerCase().split(/\s+/);
@@ -511,7 +461,7 @@ export default function Home() {
     return jobKeywordsLower.filter(keyword => !resumeKeywords.includes(keyword));
   };
 
-  const missingKeywords = useMemo(getMissingKeywords, [selectedJob, resume]);
+  const missingKeywords = useMemo(getMissingKeywords, [selectedJob, resume]);*/
 
 
   return (
@@ -801,11 +751,6 @@ export default function Home() {
                                 <Button variant="destructive" onClick={handleDeleteJob}><Trash className="h-4 w-4 mr-2" />Delete Job</Button>
               </TabsContent>
               <TabsContent value="feedback" className="mt-4">
-                <ScrollArea className="h-[400px] w-full rounded-md border p-4">
-                  <Label>Feedback:</Label>
-                  <p className="whitespace-pre-line">{feedback}</p>
-                </ScrollArea>
-              </TabsContent>
               <TabsContent value="keywords" className="mt-4">
                 <Label>Keywords:</Label>
                  <ScrollArea className="h-[200px] w-full rounded-md border p-4">
@@ -813,37 +758,12 @@ export default function Home() {
                         {keywords.join(", ")}
                     </Markdown>
                 </ScrollArea>
-                {missingKeywords.length > 0 && (
-                  <>
-                    <Separator className="my-2" />
-                    <Label>Suggested Keywords for Resume:</Label>
-                    <ScrollArea className="h-[100px] w-full rounded-md border p-4">
-                      <Markdown>
-                        {missingKeywords.join(", ")}
-                      </Markdown>
-                    </ScrollArea>
-                  </>
-                )}
-              </TabsContent>
-              <TabsContent value="resume" className="mt-4">
-                <Label>Your Resume:</Label>
-                <ScrollArea className="h-[400px] w-full rounded-md border p-4">
-                    <Markdown>
-                        {resume}
-                    </Markdown>
-                </ScrollArea>
-              </TabsContent>
-              <TabsContent value="keyword-analysis" className="mt-4">
-                <Label>Keyword Analysis:</Label>
-                <ScrollArea className="h-[400px] w-full rounded-md border p-4">
-                  <Markdown>{keywordsAnalysis}</Markdown>
-                </ScrollArea>
               </TabsContent>
               <TabsContent value="updated-resume" className="mt-4">
                 <Label>Updated Resume:</Label>
                 <ScrollArea className="h-[400px] w-full rounded-md border p-4">
                   <Markdown>{updatedResume}</Markdown>
-                </ScrollArea>
+                </ScrollArea>                
               </TabsContent>
               <TabsContent value="updated-resume-analysis" className="mt-4">
                 <Label>Updated Resume Analysis:</Label>
