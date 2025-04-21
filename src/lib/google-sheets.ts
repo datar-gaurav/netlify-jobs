@@ -5,6 +5,7 @@ import { JobPosting } from '@/services/external-job-boards';
 
 let SHEET_ID: string | undefined = process.env.GOOGLE_SHEET_ID;
 const SHEET_TAB = 'Applications';
+const AI_FEEDBACK_TAB = 'AI Feedback';
 
 async function getSheetsAPI() {
   try {
@@ -256,5 +257,30 @@ export async function deleteJobFromSheet(rowIndex: number) {
   } catch (error) {
     console.error('Error deleting job:', error);
     throw error;
+  }
+}
+
+export async function getAIFeedback(): Promise<any[]> {
+  if (!SHEET_ID) throw new Error('Sheet ID not set.');
+
+  try {
+    const sheets = await getSheetsAPI();
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: `${AI_FEEDBACK_TAB}!A1:Z`, // Adjust columns as needed
+    });
+
+    const values = response?.data?.values || [];
+    const headers = values[0] as string[];
+    const rows = values.slice(1);
+
+    return rows.map(row => {
+      const obj: { [key: string]: any } = {};
+      headers.forEach((h, i) => (obj[h] = row[i] || ''));
+      return obj;
+    });
+  } catch (error) {
+    console.error('Error getting AI feedback:', error);
+    return [];
   }
 }
