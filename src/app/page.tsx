@@ -563,12 +563,9 @@ export default function Home() {
                     <Label htmlFor="job-description" className="text-right">
                       Job Description
                     </Label>
-                    <Textarea
-                      id="job-description"
-                      value={newJobDescription}
-                      onChange={(e) => setNewJobDescription(e.target.value)}
-                      className="col-span-3"
-                    />
+                    <ScrollArea className="h-[200px] w-full rounded-md border p-4">
+  <Markdown>{newJobDescription}</Markdown>
+</ScrollArea>
                   </div>
                 </div>
                 <DialogFooter>
@@ -594,12 +591,9 @@ export default function Home() {
                                       <Label htmlFor="resume-markdown" className="text-right">
                                           Resume (Markdown)
                                       </Label>
-                                      <Textarea
-                                          id="resume-markdown"
-                                          value={resume}
-                                          onChange={handleResumeChange}
-                                          className="col-span-3"
-                                      />
+                                      <ScrollArea className="h-[400px] w-full rounded-md border p-4">
+  <Markdown>{resume}</Markdown>
+</ScrollArea>
                                   </div>
                               </div>
                               <DialogFooter>
@@ -853,12 +847,9 @@ export default function Home() {
               </TabsContent>
               <TabsContent value="final-resume" className="mt-4">
                 <Label>Final Resume (Editable):</Label>
-                <Textarea
-                  value={finalResume}
-                  onChange={handleFinalResumeChange}
-                  className="h-64"
-                  placeholder="Paste or write your final resume here..."
-                />
+                <ScrollArea className="h-[400px] w-full rounded-md border p-4">
+                  <Markdown>{finalResume}</Markdown>
+                </ScrollArea>
               </TabsContent>
               <TabsContent value="latex-resume" className="mt-4">
                 <Label>LaTeX Resume:</Label>
@@ -868,7 +859,9 @@ export default function Home() {
               </TabsContent>
               <TabsContent value="notes" className="mt-4">
                 <Label>Notes:</Label>
-                <Textarea value={notes} onChange={handleNotesChange} className="h-40" />
+                <ScrollArea className="h-[200px] w-full rounded-md border p-4">
+  <Markdown>{notes}</Markdown>
+</ScrollArea>
               </TabsContent>
             </Tabs>
           </CardContent>
