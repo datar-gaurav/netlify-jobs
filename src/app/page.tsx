@@ -11,9 +11,6 @@ import {
   TableCaption,
 } from "@/components/ui/table";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { analyzeJobDescription } from "@/ai/flows/job-keyword-analyzer";
-import { analyzeJobRelevance } from "@/ai/flows/job-relevance-analyzer";
-import { generateApplicationFeedback } from "@/ai/flows/application-feedback-generator";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -183,29 +180,10 @@ export default function Home() {
   useEffect(() => {
     const analyzeJob = async () => {
       if (selectedJob) {
-        const keywordAnalysis = await analyzeJobDescription({ jobDescription: selectedJob.jobDescription });
-        setKeywords(keywordAnalysis.keywords);
-
-        const relevanceAnalysis = await analyzeJobRelevance({ jobDescription: selectedJob.jobDescription, resume: resume });        
-        const newRelevanceScore = relevanceAnalysis.relevanceScore;
-        setRelevanceScore(newRelevanceScore);
-
-        // Update job applications state
-        setJobApplications(prevJobs =>
-          prevJobs.map(job =>
-            job.employer === selectedJob.employer && job.position === selectedJob.position
-              ? { ...job, relevance: newRelevanceScore }
-              : job
-          )
-        );
-
-        //Update Google Sheet
-        const rowIndex = jobApplications.findIndex(job => job.position === selectedJob.position && job.employer === selectedJob.employer) + 2;
-        const updatedJob = { ...selectedJob, relevance: newRelevanceScore };
-        await updateJobInSheet(updatedJob, rowIndex);
-
-        const feedbackAnalysis = await generateApplicationFeedback({jobDescription: selectedJob.jobDescription, resume: resume});
-        setFeedback(feedbackAnalysis.feedback);
+        // Placeholder for manual relevance and keyword analysis
+        setKeywords([]);
+        setRelevanceScore(null);
+        setFeedback("");
       }
     };
 
@@ -323,16 +301,10 @@ export default function Home() {
     };
 
     try {
-      // Extract employer, position, and location using AI
-      const keywordAnalysis = await analyzeJobDescription({ jobDescription: newJobDescription });
-      const extractedKeywords = keywordAnalysis.keywords;
-
-      // Assuming the first keyword is the position, second is employer, and third is location (This is a naive approach)
-      if (extractedKeywords.length >= 3) {
-        newJob.position = extractedKeywords[0];
-        newJob.employer = extractedKeywords[1];
-        newJob.location = extractedKeywords[2];
-      }
+      // Manually enter job details
+      newJob.position = "";
+      newJob.employer = "";
+      newJob.location = "";
 
       await addJobToSheet(newJob);
       setJobApplications([...jobApplications, newJob]);
